@@ -5,7 +5,7 @@ ADDRESS = (SERVER, PORT)
 HEADER = 64
 FORMAT = 'utf-8'
 DISCONNECT_MESSAGE = "!DISCONNECT"
-DATABASE = "users.txt"
+DATABASE = "./v2/users.txt"
 DEFAULT_USERS = "(Tom, Tom11)\n(David, David22)\n(Beth, Beth33)\n"
 AUTHENTICATED_COMMANDS ='''> Available Commands:
 > send all <message> -----Send a message to all users

@@ -89,10 +89,10 @@ def send_request(client, message):
         
         # Send JSON message to indicate to the server
         # the requested command and user data
-        send_json(client, message)
+        return(send_json(client, message))
         
         # Return the server's response to the client
-        return receive_message(client)
+        # return receive_message(client)
     
     except Exception as e:
         return f"[CLIENT REQUEST] Error: {e}"
@@ -115,16 +115,20 @@ def send_message(client, message):
         # Send the inidicator and the message
         client.send(messageSizeIndicator)
         
-        if receive_message(client) == ("OK"):
+        response = receive_message(client)
+        if response == ("OK"):
             client.send(message.encode(FORMAT))
+            response = receive_message(client)
+            
+        return response
         
     # The indicator size was larger than HEADER
     else:
-        print("[CLIENT SEND_MESSAGE] indicator size too large")
+        return("[CLIENT SEND_MESSAGE] indicator size too large")
 
 # Sends message as JSON
 def send_json(client, message):
-    send_message(client, json.dumps(message))
+    return send_message(client, json.dumps(message))
 
 # Recieves message from the server
 def receive_message(client):

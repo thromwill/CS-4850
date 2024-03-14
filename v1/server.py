@@ -119,7 +119,6 @@ def handle_client(connection, address):
                     connection.send("Denied. Message must be bewteen 1-256 characters".encode(FORMAT))
                     # connection.recieve(MAX_BUFFER_SIZE) # Clear large incoming message
             
-            # If the message is larger than 256 characters, it cannot be cast as an integer, so a ValueError is thrown
             except ValueError as e:
                 connection.send(f"[SERVER HANDLE CLIENT] Error: {e}".encode(FORMAT))
                 
