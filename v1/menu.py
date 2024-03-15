@@ -115,4 +115,7 @@ def handle_authenticated_commands(client, command, isAuthenticated, userid):
 # Returns available commands based on authentication status
 def get_commands(isAuthenticated):
     return AUTHENTICATED_COMMANDS if isAuthenticated else UNAUTHENTICATED_COMMANDS
+
+if __name__ == "__main__":
+    run_menu()    
     

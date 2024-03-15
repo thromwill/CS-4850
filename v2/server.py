@@ -150,7 +150,11 @@ def handle_client(connection, address):
                             elif command == "logout":
                                 userid = messageJson.get("userid")
                                 response = logout(userid)
+                                for recipientId in authenticatedUsers.keys():
+                                            if recipientId != userid:
+                                                authenticatedUsers[recipientId].send(f'[ALL]{userid} left.'.encode(FORMAT))
                                 connection.send(response.encode(FORMAT))
+                                
                                 
                             else:
                                 # Command was not a valid field
