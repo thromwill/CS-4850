@@ -14,7 +14,7 @@ def run_terminal(command):
 if __name__ == "__main__":
     
     # Open server terminal
-    run_terminal("python ./v1/server.py")
+    run_terminal("python ./server.py")
 
     # Open client terminal
-    run_terminal("python ./v1/menu.py")
+    run_terminal("python ./menu.py")

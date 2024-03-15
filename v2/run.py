@@ -14,9 +14,9 @@ def run_terminal(command):
 if __name__ == "__main__":
     
     # Open server terminal
-    run_terminal("python ./v2/server.py")
+    run_terminal("python ./server.py")
 
     # Open three client terminals
     for _ in range(3):
-        run_terminal("python ./v2/menu.py")
+        run_terminal("python ./menu.py")
         

@@ -14,6 +14,9 @@ from config import *
 # Temporary incoming message storage
 messageQueue = queue.Queue()
 
+# Controls thread termination
+terminate_flag = threading.Event()
+
 # Returns new client socket
 def initialize_client():
     try:
@@ -200,4 +203,30 @@ def handle_incoming_messages(client):
             # Add message to queue for other functions
             else:
                 messageQueue.put(response)
-            
+
+def handle_incoming_messages(client):
+    try:
+        while not terminate_flag.is_set():
+            # Get response from server
+            response = client.recv(MAX_SIZE).decode(FORMAT)
+            if response:
+                
+                # Print message
+                if response.startswith("[ALL]"):
+                    print(f"{response[5:]}\n> ", end="")
+                elif response.startswith("[USER]"):
+                    print(f"{response[6:]}\n> ", end="")
+                    
+                # End thread
+                elif response.endswith("logout."):
+                    terminate_flag.set()
+                    return
+                
+                # Add message to queue for other functions
+                else:
+                    messageQueue.put(response)
+    except Exception as e:
+        print(f"Exception in handle_incoming_messages: {e}")
+        
+        # End thread
+        terminate_flag.set()

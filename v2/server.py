@@ -57,7 +57,6 @@ def start(server):
 
 # Handles incoming client messages
 def handle_client(connection, address):
-    # print(f"[NEW CONNECTION] {address} connected.")
 
     # Continue until client disconnects
     connected = True
@@ -150,8 +149,8 @@ def handle_client(connection, address):
                                 if len(authenticatedUsers) == 1:
                                     connection.send(userid.encode(FORMAT))
                                 else:
-                                    user_list = ", ".join(user for user in authenticatedUsers.keys() if user != userid)
-                                    connection.send((f"{userid}, {user_list}").encode(FORMAT))
+                                    user_list = ", ".join(user for user in authenticatedUsers.keys())
+                                    connection.send(user_list.encode(FORMAT))
                                 
                             # Logout
                             elif command == "logout":

@@ -12,7 +12,7 @@ SERVER = "127.0.0.1"
 PORT = int(f"1{str(STUDENT_ID)[-4:]}")
 ADDRESS = (SERVER, PORT)
 DISCONNECT_MESSAGE = "!DISCONNECT"
-DATABASE = "./v1/users.txt"
+DATABASE = "./users.txt"
 DEFAULT_USERS = "(Tom, Tom11)\n(David, David22)\n(Beth, Beth33)\n"
 AUTHENTICATED_COMMANDS ='''> Available Commands:
 > send - <message> ------ Send a message to the chatroom
