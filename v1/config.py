@@ -13,3 +13,5 @@ AUTHENTICATED_COMMANDS ='''> Available Commands:
 UNAUTHENTICATED_COMMANDS = '''> Available Commands:
 > login <UserID> <Password> - Log in to the chatroom
 > newuser <UserID> <Password> Create a new account'''
+MAX_CLIENTS = 1
+MAX_SIZE = 1024

@@ -2,20 +2,20 @@ from client import *
 from config import AUTHENTICATED_COMMANDS, UNAUTHENTICATED_COMMANDS
 from utils import *
 
-# Manages program execution
+# Starts program execution and handles user input
 def run_menu():
     
     # Boot client
     client = initialize_client()
     
+    # Display menu in console
+    clear_screen()
+    print("My chat room client. Version Two.\n")
+
     # Initialize values
     isAuthenticated = False
     userid = ""
     prompt = ""
-    
-    # Display menu in console
-    clear_screen()
-    print("My chat room client. Version Two.\n")
     
     # Continue until user exists
     while True:
@@ -36,6 +36,7 @@ def run_menu():
         elif isAuthenticated:
             prompt, isAuthenticated = handle_authenticated_commands(client, command, isAuthenticated, userid)
 
+        # Display prompt
         if prompt != "None":
             print(f"> {prompt}")
         
@@ -67,7 +68,7 @@ def handle_unauthenticated_commands(client, command, isAuthenticated):
     elif command.startswith("send") or command == "logout":
         prompt = "Denied. Please login first."
     
-    # If any other input is entered, indicate invalid command
+    # Some other input was entered
     else:
         prompt = "Invalid command. Type 'h' for help."
     
@@ -77,29 +78,24 @@ def handle_unauthenticated_commands(client, command, isAuthenticated):
 
 # Handles send, logout functions
 def handle_authenticated_commands(client, command, isAuthenticated, userid):
-
-    # if command.startswith("send"):
-    #     prompt = send(client, command, userid)
     
+    # Send request to send message to all users
     if command.startswith("send all"):
-        # prompt = send(client, command, userid)
         prompt = sendAll(client, command, userid)
         if not prompt.startswith("Denied"):
             prompt = "None"
-        #print("[SEND ALL -> DONE]")
-    
+            
+    # Send request to send message to specific user
     elif command.startswith("send") and not command.startswith("send all"):
         prompt = sendUser(client, command, userid)
         if not prompt.startswith("Denied"):
             prompt = "None"
-        #print("[SEND USER -> DONE]")
-        #print(f"[PROMPT] {prompt}")
 
+    # Send request for all active users
     elif command == "who":
         prompt = who(client, userid)
-        #print("[WHO -> DONE]")
 
-    # Send request to server to log user out
+    # Send request to log user out
     elif command == "logout":
         
         # If confirmation is received, update
@@ -110,7 +106,7 @@ def handle_authenticated_commands(client, command, isAuthenticated, userid):
                 prompt = f"{userid} left."
                 exit()
             else:
-                prompt = "Error logging out"
+                prompt = "Error disconnecting"
         else:
             prompt = "Error logging out."
             

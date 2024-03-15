@@ -4,7 +4,8 @@ import threading
 import queue
 from config import *
 
-message_queue = queue.Queue()
+# Temporary incoming message storage
+messageQueue = queue.Queue()
 
 # Returns new client socket
 def initialize_client():
@@ -19,6 +20,7 @@ def initialize_client():
         
         return client
     
+    # Could not create socket
     except socket.error as err:
         print(f"[CLIENT INITIALIZE_CLIENT] Socket error: {err}")
         
@@ -57,6 +59,7 @@ def new_user(client, command):
     # Send request to server and return result to user
     return send_request(client, {"command": "newuser", "userid": userid, "password": password})
 
+# Sends message to all active users
 def sendAll(client, command, userid):
     
     # Parse message from command
@@ -70,6 +73,7 @@ def sendAll(client, command, userid):
     # Send request to server and return result to user
     return send_request(client, {"command": "sendAll", "userid": userid, "body": message})
 
+# Sends message to specific user
 def sendUser(client, command, userid):
     
     # Parse message from command
@@ -83,21 +87,22 @@ def sendUser(client, command, userid):
     # Send request to server and return result to user
     return send_request(client, {"command": "sendUser", "from": userid, "to": to, "body": message})
 
+# Returns list of active users
 def who(client, userid):
     # Send request to server and return result to user
     return send_request(client, {"command": "who", "userid": userid})
 
-# Sends logout message to the server
+# Logs out user
 def logout(client, userid):    
     
     # Send request to server and return result to user
     return send_request(client, {"command": "logout", "userid": userid} )
 
-# Sends disconnect message to the server
+# Disconnects user
 def disconnect(client):
     try:
 
-        send_message(client, DISCONNECT_MESSAGE)
+        send_message(client, {"body": DISCONNECT_MESSAGE})
         client.close()
         
         return "disconnect confirmed"
@@ -111,21 +116,14 @@ def send_request(client, message):
         
         # Send JSON message to indicate to the server
         # the requested command and user data
-        send_json(client, message)
+        send_message(client, message)
         
         # Return the server's response to the client
-        #return receive_message(client)
-        response = message_queue.get()
-        # print(f"[RESPONSE] = {response}")
-        # print(f"[[DEQUEUE] {response}")
+        response = messageQueue.get()
         return response
     
     except Exception as e:
         return f"[CLIENT REQUEST] Error: {e}"
-
-# Sends message as JSON
-def send_json(client, message):
-    send_message(client, json.dumps(message))
 
 # Sends two messages to the server
 # The first message is an indication of the size of the intended message
@@ -133,29 +131,41 @@ def send_json(client, message):
 # The second message is the intended message
 def send_message(client, message):
     
-    # Get the size of the intended message
-    messageSizeIndicator = str(len(message)).encode(FORMAT)
+    # Get message body
+    body = message.get("body")
     
+    # Convert message from dict to JSON
+    messageJson = json.dumps(message)
+        
+    # Get the size of the intended message
+    messageSize = len(messageJson)
+    bodySize = len(body) if body else None
+    
+    # Store size information
+    sizeInfo = json.dumps({
+        "messageSize": messageSize,
+        "bodySize": bodySize
+    }).encode(FORMAT)
     
     # Check that the size is less than the max indicator size
-    if len(messageSizeIndicator) <= HEADER:
+    if len(sizeInfo) <= HEADER:
         
-        # Pad the size with whitespace so it is always of size HEADER
-        messageSizeIndicator += b' ' * (HEADER - len(messageSizeIndicator))
+        # Pad size with whitespace to be size of HEADER
+        sizeInfo += b' ' * (HEADER - len(sizeInfo))
         
-        # Send the inidicator and the message
-        client.send(messageSizeIndicator)
+        # Send indicator
+        client.send(sizeInfo)
         
-        #if receive_message(client) == ("OK"):
-        response = message_queue.get()
-        # print(f"[DEQUEUE] {response}")
+        # Store response
+        response = messageQueue.get()
         
-        # print(f"[MESSAGE] {message}")
+        # Send message
         if response == ("OK"):
-            client.send(message.encode(FORMAT))
-            # print(f"[SENT MESSAGE] {message}")
+            client.send(messageJson.encode(FORMAT))
+            
+        # Reponse was not OK, put it back into queue
         else:
-            message_queue.put(response)
+            messageQueue.put(response)
             
         
     # The indicator size was larger than HEADER
@@ -165,15 +175,22 @@ def send_message(client, message):
 # Handles incoming messages from the server
 def handle_incoming_messages(client):
     while True:
+        
+        # Get response from server
         response = client.recv(MAX_SIZE).decode(FORMAT)
-        # print(f"[RECEIVED] {response}")
         if response:
-            if response.startswith("[USER]"):
+            
+            # Print message
+            if response.startswith("[ALL]"):
+                print(f"{response[5:]}\n> ", end="")
+            elif response.startswith("[USER]"):
                 print(f"{response[6:]}\n> ", end="")
                 
+            # End thread
             elif response.endswith("logout."):
                 return
+            
+            # Add message to queue for other functions
             else:
-                message_queue.put(response)
-                #print(f"[ENQUEUE] {response}")
+                messageQueue.put(response)
             

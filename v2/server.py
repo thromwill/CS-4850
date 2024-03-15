@@ -25,6 +25,16 @@ def initialize_server():
 # Starts server to allow client connection
 def start(server):
     
+    try:
+        # Check for userid in file
+        with open(DATABASE, 'r') as f:
+            pass
+
+    except FileNotFoundError:
+        # Create file, add default users, then add new user
+        with open(DATABASE, 'w') as f:
+            f.write(DEFAULT_USERS)
+            
     # Listen for server activity 
     server.listen()
     
@@ -37,7 +47,6 @@ def start(server):
         connection, address = server.accept()
         thread = threading.Thread(target=handle_client, args = (connection, address))
         thread.start()
-        # print(f"[ACTIVE CONNECTIONS] {threading.active_count() - 1}")
 
 # Handles incoming client messages
 def handle_client(connection, address):
@@ -49,35 +58,35 @@ def handle_client(connection, address):
         
         # Recieve size indicator
         messageLength = connection.recv(HEADER).decode(FORMAT)
+        messageLengthJson = json.loads(messageLength)
+        
         
         # Check that the indicator was recieved
-        if messageLength:
+        if messageLengthJson:
             try: 
                 
                 # Only allow messages of length 1-256
-                messageLength = int(messageLength)
-                if 1 <= messageLength <= 256:
+                check = messageLengthJson.get("bodySize")
+                if not check or 1 <= check <= 256:
                     
                     # Alert the client to send full message
                     connection.send("OK".encode(FORMAT))
                     
                     # If the indicator indicated valid message size,
                     # recieve the intended message
-                    message = connection.recv(messageLength).decode(FORMAT)
+                    message = connection.recv(messageLengthJson.get("messageSize")).decode(FORMAT)
                     
-                    # Stop if we the user wants to disconnect
-                    if message == DISCONNECT_MESSAGE:
-                        connected = False
-                        continue
-                        
                     # Read message as json
                     try:
-                        #print(f"[MESSAGE]: {message}")
                         messageJson = json.loads(message)
-                        #print(f"[MESSAGE JSON]: {messageJson}")
                         
                         # Execute primary user commands
                         if isinstance(messageJson, dict):
+                            # Stop if we the user wants to disconnect
+                            if messageJson.get("body") == DISCONNECT_MESSAGE:
+                                connected = False
+                                continue
+                    
                             command = messageJson.get("command")
                             
                             # Login
@@ -86,6 +95,11 @@ def handle_client(connection, address):
                                 password = messageJson.get("password")
                                 response = login(userid, password, connection)
                                 connection.send(response.encode(FORMAT))
+                                
+                                if not response.startswith("Denied"):
+                                    for recipientId in authenticatedUsers.keys():
+                                            if recipientId != userid:
+                                                authenticatedUsers[recipientId].send(f'[ALL]{userid} joins.'.encode(FORMAT))
                             
                             # New User
                             elif command == "newuser":
@@ -105,7 +119,7 @@ def handle_client(connection, address):
                                     print(f'{userid}: {message}')
                                     for recipientId in authenticatedUsers.keys():
                                         if recipientId != userid:
-                                            authenticatedUsers[recipientId].send(f'[USER]{userid}: {message}'.encode(FORMAT))
+                                            authenticatedUsers[recipientId].send(f'[ALL]{userid}: {message}'.encode(FORMAT))
                                     connection.send(f"{userid}: {message}".encode(FORMAT))
                             
                             # Send User
@@ -137,6 +151,7 @@ def handle_client(connection, address):
                                 userid = messageJson.get("userid")
                                 response = logout(userid)
                                 connection.send(response.encode(FORMAT))
+                                
                             else:
                                 # Command was not a valid field
                                 connection.send("[FAILURE] Invalid command".encode(FORMAT))
@@ -155,64 +170,52 @@ def handle_client(connection, address):
             except ValueError as e:
                 connection.send(f"[SERVER HANDLE CLIENT] Error: {e}".encode(FORMAT))
                 
-    # print(f"[CONNECTION CLOSED] {address} disconnected.")
     connection.close()
     
 # Authenticates user given userid and password
 def login(userid, password, connection):
-    try:
-        
-        # Read the file
-        with open(DATABASE, 'r') as f:
-            
-            # Check for valid credentials
-            for line in f:
-                u, p = line.strip()[1:-1].split(', ')
-
-                if u == userid and p == password:
-                    
-                    # Check if user is already signed in
-                    if u in authenticatedUsers.keys():
-                        return "Denied. Please sign out of current session before signing in again."
-                    
-                    # Update list of users, display in console, and return confirmation
-                    authenticatedUsers[u] = connection
-                    print(f"{userid} login.")
-                    return f"login confirmed"
-                
-    # File was not found
-    except FileNotFoundError:
-        # Create file and add default users
-        with open(DATABASE, 'w') as f:
-            f.write(DEFAULT_USERS)
     
+    # Check if a user is already logged in
+    if len(authenticatedUsers) == MAX_CLIENTS:
+        return "Denied. Too many active users."
+    
+    # Read the file
+    with open(DATABASE, 'r') as f:
+        
+        # Check for valid credentials
+        for line in f:
+            u, p = line.strip()[1:-1].split(', ')
+
+            if u == userid and p == password:
+                
+                # Check if user is already signed in
+                if u in authenticatedUsers.keys():
+                    return "Denied. Please sign out of current session before signing in again."
+                
+                # Update list of users, display in console, and return confirmation
+                authenticatedUsers[u] = connection
+                print(f"{userid} login.")
+                return f"login confirmed"
+                
     # Return denial
     return "Denied. User name or password incorrect."
 
 # Adds user to 'database' aka 'users.txt'
 def newuser(userid, password):
-    try:
         
-        # Check for userid in file
-        with open(DATABASE, 'r') as f:
-            for line in f:
-                existing_userid, _ = line.strip()[1:-1].split(', ')
-                
-                # If it exists, return denial
-                if existing_userid == userid:
-                    return "Denied. User account already exists."
-        
-        # Add new user to file
-        with open(DATABASE, 'a') as f:
-            f.write(f"({userid}, {password})\n")
+    # Check for userid in file
+    with open(DATABASE, 'r') as f:
+        for line in f:
+            existing_userid, _ = line.strip()[1:-1].split(', ')
             
-    # File was not found        
-    except FileNotFoundError:
-        # Create file, add default users, then add new user
-        with open(DATABASE, 'w') as f:
-            f.write(DEFAULT_USERS)
-            f.write(f"({userid}, {password})\n")
+            # If it exists, return denial
+            if existing_userid == userid:
+                return "Denied. User account already exists."
     
+    # Add new user to file
+    with open(DATABASE, 'a') as f:
+        f.write(f"({userid}, {password})\n")
+            
     # Display in console and return confirmation
     print("New user account created.")
     return f"New user account created. Please login."
@@ -225,7 +228,5 @@ def logout(userid):
     
 if __name__ == "__main__":
     server = initialize_server()
-    
-    # print("[STARTING] Server is starting...")
     start(server)
     

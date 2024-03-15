@@ -1,17 +1,18 @@
+from config import *
 import json
 import socket
-from config import *
 
 # Returns new client socket
 def initialize_client():
     try:
         
-        # Create new socket
+        # Create new socket for the client
         client = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
         client.connect(ADDRESS)
         
         return client
     
+    # Could not create socket
     except socket.error as err:
         print(f"[CLIENT INITIALIZE_CLIENT] Socket error: {err}")
         
@@ -75,11 +76,13 @@ def logout(client, userid):
 def disconnect(client):
     try:
 
-        send_message(client, DISCONNECT_MESSAGE)
+        # Send disconnect message
+        send_message(client, {"body": DISCONNECT_MESSAGE})
         client.close()
         
         return "disconnect confirmed"
-        
+    
+    # Message failed
     except Exception as e:
         return f"[CLIENT DISCONNECT] Error: {e}"
 
@@ -88,50 +91,57 @@ def send_request(client, message):
     try:
         
         # Send JSON message to indicate to the server
-        # the requested command and user data
-        return(send_json(client, message))
-        
-        # Return the server's response to the client
-        # return receive_message(client)
-    
+        # the requested command and user data and
+        # return response
+        return(send_message(client, message))
+            
     except Exception as e:
         return f"[CLIENT REQUEST] Error: {e}"
 
 # Sends two messages to the server
-# The first message is an indication of the size of the intended message
-# This allows the server to reject the intended message
-# The second message is the intended message
+# 1) Indicates message size and body size
+# This allows the server to reject messages of certain size
+# 2) Intended message
+# * Initially, this was implemented such that the total message
+# size could be no larger than 256 characters. After reading
+# the instructions more carefully, it has changed such that
+# any command length is allowed such that any command body
+# is 256 characters or less
 def send_message(client, message):
     
-    # Get the size of the intended message
-    messageSizeIndicator = str(len(message)).encode(FORMAT)
+    # Get message body
+    body = message.get("body")
+
+    # Convert message from dict to JSON
+    messageJson = json.dumps(message)
+        
+    # Get total message size and body size if applicable
+    messageSize = len(messageJson)
+    bodySize = len(body) if body else None
     
-    # Check that the size is less than the max indicator size
-    if len(messageSizeIndicator) <= HEADER:
+    # Store size information
+    sizeInfo = json.dumps({
+        "messageSize": messageSize,
+        "bodySize": bodySize
+    }).encode(FORMAT)
+    
+    # Check that sizeInfo is less than max indicator size
+    if len(sizeInfo) <= HEADER:
         
-        # Pad the size with whitespace so it is always of size HEADER
-        messageSizeIndicator += b' ' * (HEADER - len(messageSizeIndicator))
+        # Pad size with whitespace to be size of HEADER
+        sizeInfo += b' ' * (HEADER - len(sizeInfo))
         
-        # Send the inidicator and the message
-        client.send(messageSizeIndicator)
+        # Send inidicator
+        client.send(sizeInfo)
         
-        response = receive_message(client)
+        # If server allows message, send message and return response
+        response = client.recv(MAX_SIZE).decode(FORMAT)
         if response == ("OK"):
-            client.send(message.encode(FORMAT))
-            response = receive_message(client)
-            
+            client.send(messageJson.encode(FORMAT))
+            response = client.recv(MAX_SIZE).decode(FORMAT)
+    
         return response
         
     # The indicator size was larger than HEADER
     else:
         return("[CLIENT SEND_MESSAGE] indicator size too large")
-
-# Sends message as JSON
-def send_json(client, message):
-    return send_message(client, json.dumps(message))
-
-# Recieves message from the server
-def receive_message(client):
-    response = client.recv(HEADER).decode(FORMAT)
-    return response if response else None
-   

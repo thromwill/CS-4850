@@ -2,22 +2,22 @@ from client import *
 from config import AUTHENTICATED_COMMANDS, UNAUTHENTICATED_COMMANDS
 from utils import *
 
-# Manages program execution
+# Starts program execution and handles user input
 def run_menu():
     
     # Boot client
     client = initialize_client()
+    
+    # Display menu in console
+    clear_screen()
+    print("My chat room client. Version One.\n")
     
     # Initialize values
     isAuthenticated = False
     userid = ""
     prompt = ""
     
-    # Display menu in console
-    clear_screen()
-    print("My chat room client. Version One.\n")
-    
-    # Continue until user exists
+    # Continue until user logs out
     while True:
         
         # Take user input
@@ -26,10 +26,9 @@ def run_menu():
         # Show command options based on authentication status
         if command == "h":
             print(get_commands(isAuthenticated))
-            continue
         
         # Handle login, newuser commands   
-        if not isAuthenticated:
+        elif not isAuthenticated:
             prompt, isAuthenticated, userid = handle_unauthenticated_commands(client, command, isAuthenticated)
             print(f"> {prompt}")
             
@@ -37,6 +36,10 @@ def run_menu():
         elif isAuthenticated:
             prompt, isAuthenticated = handle_authenticated_commands(client, command, isAuthenticated, userid)
             print(f"> {prompt}")
+            
+        # Somethings wrong
+        else:
+            print("[RUN MENU] Authentication Error")
 
 # Handles login, newuser commands
 def handle_unauthenticated_commands(client, command, isAuthenticated):
@@ -55,7 +58,7 @@ def handle_unauthenticated_commands(client, command, isAuthenticated):
         if prompt == "login confirmed":
             isAuthenticated = True
             
-    # Send request to server to add a user
+    # Send request to server to add a new user
     elif command.startswith("newuser"):
         
         # Update prompt with response
@@ -66,12 +69,12 @@ def handle_unauthenticated_commands(client, command, isAuthenticated):
     elif command.startswith("send") or command == "logout":
         prompt = "Denied. Please login first."
     
-    # If any other input is entered, indicate invalid command
+    # Some other input was entered
     else:
         prompt = "Invalid command. Type 'h' for help."
     
     # Return user message, authentication status,
-    # and userid if user logged in otherwise empty string
+    # and userid if user is logged in otherwise empty string
     return prompt, isAuthenticated, userid
 
 # Handles send, logout functions
@@ -87,29 +90,29 @@ def handle_authenticated_commands(client, command, isAuthenticated, userid):
     elif command == "logout":
         
         # If confirmation is received, update
-        # authentication status and prompt
+        # authentication status, display message, and disconnect client
         if logout(client, userid) == (f"{userid} logout"):
             if disconnect(client) == ("disconnect confirmed"):
                 isAuthenticated = False
-                prompt = f"{userid} left."
+                print(f"> {userid} left.")
                 exit()
             else:
-                prompt = "Error logging out"
+                prompt = "Error disconnecting"
         else:
             prompt = "Error logging out."
             
     # If unauthenticated commands are used,
     # display denial message to the user
-    elif command.startswith("login") or command == "newuser":
+    elif command.startswith("login") or command.startswith("newuser"):
         prompt = "Denied. Please logout first."
 
-    # If any other input is entered, indicate invalid command
+    # Some other input was entered
     else:
         prompt = "Invalid command. Type 'h' for help."
         
     return prompt, isAuthenticated
 
-# Returns available commands string based on authentication status
+# Returns available commands based on authentication status
 def get_commands(isAuthenticated):
     return AUTHENTICATED_COMMANDS if isAuthenticated else UNAUTHENTICATED_COMMANDS
     
