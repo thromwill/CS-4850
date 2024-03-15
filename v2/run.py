@@ -1,3 +1,10 @@
+'''
+Name: Will Throm
+ID: 18186744
+Pawprint: WRTKB8
+Date: 03/15/2024
+Description: (Windows) Opens four terminals, one for the server and three for clients
+'''
 import os
 
 # Opens a terminal and runs the command

@@ -1,3 +1,10 @@
+'''
+Name: Will Throm
+ID: 18186744
+Pawprint: WRTKB8
+Date: 03/15/2024
+Description: starts client and manages user CLI
+'''
 from client import *
 from config import AUTHENTICATED_COMMANDS, UNAUTHENTICATED_COMMANDS
 from utils import *

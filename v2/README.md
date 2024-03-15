@@ -1,4 +1,4 @@
-ChatRoom Version 1
+ChatRoom Version 2
 
 Submission:
 
@@ -16,11 +16,11 @@ Execution:
 		"python menu.py" (for each client)
 
 Directory Structure:
-- v1:
+- v2:
   - client.py: client side logic
   - config.py: shared constants
   - menu.py: starts client and manages user CLI
-  - run.py: (Windows) Opens two terminals, one for the server and one for a client
+  - run.py: (Windows) Opens four terminals, one for the server and three for clients
   - server.py: server side logic
   - utils.py: shared helper functions
   * - users.txt: database file for users (created at program execution)
@@ -49,4 +49,6 @@ it when the first account is created."
 - Initially, it was my understanding that the server would only accept requests of total length 256 or less, but I now believe it is intended that requests of any lengtha are accepted such that message bodies must be between 1-256 characters.
 - This method is more scalable than having the client check for message length. If the permitted length changes, only one check on the server has to change and each client does not require update.
 
-5. This implentation is based on the following 'Tech With Tim' tutorial for Python Socket Programming and adapted/ expanded to meet the assignment requirements. Link: https://www.youtube.com/watch?v=3QiPPX-KeSc&t=2444s
+5. The primary difference between this implementation compared to version 1 is the support for multiple clients. This change is primarily driven by the use of a new thread to continuously listen for messages from the server. While at each step in version one the client sends a command and waits for a response, in this version the client cmust deal with unsolicited messages from other users. As this version was built upon version one, the simplest way to deal with this change was to add a message queue to allow the server to behave asynchronously.
+
+6. This implentation is based on the following 'Tech With Tim' tutorial for Python Socket Programming and adapted/ expanded to meet the assignment requirements. Link: https://www.youtube.com/watch?v=3QiPPX-KeSc&t=2444s

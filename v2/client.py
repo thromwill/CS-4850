@@ -1,3 +1,10 @@
+'''
+Name: Will Throm
+ID: 18186744
+Pawprint: WRTKB8
+Date: 03/15/2024
+Description: client side logic
+'''
 import json
 import socket
 import threading

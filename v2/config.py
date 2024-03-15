@@ -1,3 +1,10 @@
+'''
+Name: Will Throm
+ID: 18186744
+Pawprint: WRTKB8
+Date: 03/15/2024
+Description: shared constants
+'''
 STUDENT_ID = 18186744
 SERVER = "127.0.0.1"
 PORT = int(f"1{str(STUDENT_ID)[-4:]}")
